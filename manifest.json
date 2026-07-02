@@ -1,0 +1,22 @@
+{
+  "name": "B&W Darkroom Timer",
+  "short_name": "Darkroom",
+  "description": "Black & White Film Developing Workflow Timer",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#050505",
+  "theme_color": "#050505",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=192&h=192&fit=crop&q=80",
+      "sizes": "192x192",
+      "type": "image/jpeg"
+    },
+    {
+      "src": "https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=512&h=512&fit=crop&q=80",
+      "sizes": "512x512",
+      "type": "image/jpeg"
+    }
+  ]
+}
