@@ -83,8 +83,16 @@
         <p id="timerDetail" class="text-sm text-gray-400 mt-1"></p>
       </div>
 
-      <div class="py-12 bg-[#111] rounded-3xl border border-gray-900 shadow-2xl">
+      <div class="py-8 bg-[#111] rounded-3xl border border-gray-900 shadow-2xl flex flex-col items-center justify-center space-y-4">
         <div id="timerDisplay" class="text-7xl font-black font-timer text-white tracking-tighter">00:00</div>
+        
+        <div class="flex items-center space-x-2 pt-2">
+          <button onclick="adjustTime(-60)" class="text-[11px] font-mono font-bold border border-neutral-800 bg-neutral-900 text-neutral-400 px-2.5 py-1 rounded-md hover:text-white hover:border-neutral-700 active:scale-95 transition">-1m</button>
+          <button onclick="adjustTime(-10)" class="text-[11px] font-mono font-bold border border-neutral-800 bg-neutral-900 text-neutral-400 px-2.5 py-1 rounded-md hover:text-white hover:border-neutral-700 active:scale-95 transition">-10s</button>
+          <span class="text-[10px] font-bold text-neutral-600 tracking-widest uppercase px-2">ADJUST</span>
+          <button onclick="adjustTime(10)" class="text-[11px] font-mono font-bold border border-neutral-800 bg-neutral-900 text-neutral-400 px-2.5 py-1 rounded-md hover:text-white hover:border-neutral-700 active:scale-95 transition">+10s</button>
+          <button onclick="adjustTime(60)" class="text-[11px] font-mono font-bold border border-neutral-800 bg-neutral-900 text-neutral-400 px-2.5 py-1 rounded-md hover:text-white hover:border-neutral-700 active:scale-95 transition">+1m</button>
+        </div>
       </div>
 
       <div class="grid grid-cols-2 gap-4">
@@ -132,13 +140,10 @@
     let masterData = []; 
     let currentFilteredData = []; 
     
-    // 単一管理されるタイマーステート
     let timerInterval = null;
     let totalSeconds = 0;
     let initialSeconds = 0;
     let isTimerRunning = false;
-    
-    // 現在どの工程を走らせているかの識別子 ('DEV', 'WASH1', 'FIX', 'WASH2', 'FLO')
     let currentStepKey = 'DEV'; 
 
     window.onload = function() {
@@ -250,7 +255,6 @@
 
     function hideResults() { document.getElementById('resultArea').classList.add('hidden'); document.getElementById('welcomeArea').classList.remove('hidden'); }
 
-    // --- ⏳ タイマー呼び出し口（レシピ選択時：現像） ---
     function openTimerByRecipe(index) {
       const item = currentFilteredData[index];
       if (!item) return;
@@ -276,7 +280,6 @@
       initAndShowOverlay();
     }
 
-    // --- 🎛️ タイマー呼び出し口（ボトムバーから直接ジャンプ時） ---
     function openGenericTimer(stepKey, seconds, colorClass, detailText) {
       clearInterval(timerInterval);
       isTimerRunning = false;
@@ -313,36 +316,43 @@
       document.getElementById('timerOverlay').classList.remove('hidden');
     }
 
-    // --- ⚡ メインボタンの分岐処理 (START / PAUSE / DONEのハンドリング) ---
+    function adjustTime(amount) {
+      // 終了時（DONE状態）は調整不可
+      const btn = document.getElementById('startPauseBtn');
+      if (btn.textContent === "DONE") return;
+
+      // 秒数を増減（0秒以下にならないようにガード）
+      totalSeconds = Math.max(0, totalSeconds + amount);
+      
+      // カウントダウンが始まっていない初期状態なら、リセット時のベース秒数(initialSeconds)も合わせて更新
+      if (!isTimerRunning && btn.textContent === "TIMER START") {
+        initialSeconds = totalSeconds;
+      }
+      
+      // タイムアップの赤文字点滅エフェクトが出ていた場合はリセット
+      document.getElementById('timerDisplay').classList.remove('text-red-500', 'animate-pulse');
+      updateTimerDisplay();
+    }
+
     function handleMainButtonClick() {
       const btn = document.getElementById('startPauseBtn');
-      
-      // 終了状態（DONE）のときに押されたら、次のタイマーへ移行
       if (btn.textContent === "DONE") {
         advanceToNextStep();
         return;
       }
-      
-      // それ以外は通常のタイマーの開始・一時停止
       toggleMainTimer();
     }
 
-    // --- 🚀 次の工程への自動遷移ロジック ---
     function advanceToNextStep() {
       if (currentStepKey === 'DEV') {
-        // 現像 ➔ 水洗 3分
         openGenericTimer('WASH1', 3*60, 'text-blue-400', 'Tap Water Wash (Stop Bath)');
       } else if (currentStepKey === 'WASH1') {
-        // 水洗 3分 ➔ 定着 5分
         openGenericTimer('FIX', 5*60, 'text-amber-500', 'Non-hardening Fixer Solution');
       } else if (currentStepKey === 'FIX') {
-        // 定着 5分 ➔ 水洗 7分
         openGenericTimer('WASH2', 7*60, 'text-blue-400', 'Final Tap Water Wash');
       } else if (currentStepKey === 'WASH2') {
-        // 水洗 7分 ➔ PHOTO FLO 1分
         openGenericTimer('FLO', 1*60, 'text-fuchsia-400', 'Wetting Agent (1 Minute)');
       } else if (currentStepKey === 'FLO') {
-        // すべて完了
         closeTimer();
       }
     }
@@ -371,11 +381,9 @@
             isTimerRunning = false;
             display.classList.add('text-red-500', 'animate-pulse');
             
-            // ボタンをDONEに変更
             btn.textContent = "DONE";
             btn.className = "py-4 rounded-xl font-bold bg-blue-600 text-white text-sm tracking-wider uppercase";
 
-            // 通知処理
             if (navigator.vibrate) navigator.vibrate([1000, 500, 1000]);
             try {
               const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
